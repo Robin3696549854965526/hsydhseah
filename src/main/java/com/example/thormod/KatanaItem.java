@@ -10,9 +10,9 @@ import net.minecraft.world.level.Level;
 
 public class KatanaItem extends Item {
     /** Zusatzschaden (Netherite-Basis kommt obendrauf). */
-    public static final float BONUS_DAMAGE = 10.0F;
+    public static final float BONUS_DAMAGE = 100.0F;
     /** Sehr hoher Angriffsspeed = kein Angriffs-Cooldown, Spam-Klicken wie in 1.8. */
-    public static final float ATTACK_SPEED = 20.0F;
+    public static final float ATTACK_SPEED = 200.0F;
 
     public KatanaItem(Properties props) {
         super(props);
