@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "thormod",
+  "version": "${version}",
+  "name": "Thor Mod",
+  "description": "Thors Hammer (Fliegen + Blitz) und ein Katana mit Schutzschild und Unsterblichkeit.",
+  "authors": ["Du"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.example.thormod.ThorMod"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
