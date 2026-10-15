@@ -1,7 +1,7 @@
 package com.example.thormod;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -18,6 +18,9 @@ import java.util.UUID;
 public class PlayerEffects {
     private static final Set<UUID> SHIELD_ACTIVE = new HashSet<>();
     private static final Set<UUID> GRANTED_FLIGHT = new HashSet<>();
+
+    private static final DustParticleOptions RED = new DustParticleOptions(0xD91414, 1.3F);
+    private static final DustParticleOptions PURPLE = new DustParticleOptions(0x7B2CFF, 1.0F);
 
     public static boolean holdingHammer(Player p) {
         return p.getMainHandItem().is(ThorMod.THOR_HAMMER) || p.getOffhandItem().is(ThorMod.THOR_HAMMER);
@@ -61,6 +64,52 @@ public class PlayerEffects {
         }
     }
 
+    /** Ein Partikel an einer Position relativ zum Spieler (lx = rechts, lz = vorne). */
+    private static void dot(ServerLevel sl, Player p, double lx, double ly, double lz, DustParticleOptions o) {
+        double yaw = Math.toRadians(p.yBodyRot);
+        double fx = -Math.sin(yaw), fz = Math.cos(yaw);
+        double rx = -Math.cos(yaw), rz = -Math.sin(yaw);
+        sl.sendParticles(o,
+                p.getX() + rx * lx + fx * lz,
+                p.getY() + ly,
+                p.getZ() + rz * lx + fz * lz,
+                1, 0, 0, 0, 0);
+    }
+
+    /** Susanoo-aehnliche rote Huelle aus Partikeln. */
+    private static void susanoo(ServerLevel sl, Player p) {
+        // Rippen: vier Boegen, vorne offen
+        double[] heights = {0.7, 1.05, 1.4, 1.75};
+        double[] radii = {0.85, 0.95, 0.9, 0.75};
+        for (int h = 0; h < heights.length; h++) {
+            for (int d = 50; d <= 310; d += 12) {
+                double a = Math.toRadians(d);
+                dot(sl, p, Math.sin(a) * radii[h], heights[h], Math.cos(a) * radii[h], RED);
+            }
+        }
+
+        // Wirbelsaeule hinten
+        for (double y = 0.2; y <= 2.3; y += 0.15) {
+            dot(sl, p, 0, y, -0.9, RED);
+        }
+
+        // Schulterkugeln ueber den Schultern
+        for (int s = -1; s <= 1; s += 2) {
+            for (int d = 0; d < 360; d += 45) {
+                double a = Math.toRadians(d);
+                dot(sl, p, s * 0.6 + 0.18 * Math.cos(a), 2.2 + 0.18 * Math.sin(a), 0, RED);
+            }
+        }
+
+        // Arme: Boegen, die sich vorne einrollen
+        for (int s = -1; s <= 1; s += 2) {
+            for (int i = 0; i <= 12; i++) {
+                double t = i / 12.0;
+                dot(sl, p, s * (0.95 - 0.35 * t), 1.3 - 1.1 * t, 0.1 + 0.9 * Math.sin(t * Math.PI), RED);
+            }
+        }
+    }
+
     public static void tick(Player player) {
         UUID id = player.getUUID();
 
@@ -91,14 +140,16 @@ public class PlayerEffects {
             player.setAirSupply(player.getMaxAirSupply());
 
             if (player.level() instanceof ServerLevel sl) {
-                double r = 1.6;
-                for (int i = 0; i < 12; i++) {
-                    double theta = sl.getRandom().nextDouble() * Math.PI * 2;
-                    double phi = Math.acos(2 * sl.getRandom().nextDouble() - 1);
-                    double x = player.getX() + r * Math.sin(phi) * Math.cos(theta);
-                    double y = player.getY() + 1.0 + r * Math.cos(phi) * 0.8;
-                    double z = player.getZ() + r * Math.sin(phi) * Math.sin(theta);
-                    sl.sendParticles(ParticleTypes.END_ROD, x, y, z, 1, 0, 0, 0, 0);
+                // rote Huelle alle 2 Ticks
+                if (player.tickCount % 2 == 0) {
+                    susanoo(sl, player);
+                }
+                // lila Nebel am Koerper
+                for (int i = 0; i < 4; i++) {
+                    double lx = (sl.getRandom().nextDouble() - 0.5) * 0.8;
+                    double ly = 0.2 + sl.getRandom().nextDouble() * 1.6;
+                    double lz = (sl.getRandom().nextDouble() - 0.5) * 0.8;
+                    dot(sl, player, lx, ly, lz, PURPLE);
                 }
             }
         }
