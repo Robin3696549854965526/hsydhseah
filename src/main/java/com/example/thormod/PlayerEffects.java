@@ -1,14 +1,20 @@
 package com.example.thormod;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-/** Verwaltet Flug (Hammer) und Schild (Katana) pro Spieler. */
+/** Verwaltet Flug (Hammer), Schild (Katana) und Katana-Verzauberungen pro Spieler. */
 public class PlayerEffects {
     private static final Set<UUID> SHIELD_ACTIVE = new HashSet<>();
     private static final Set<UUID> GRANTED_FLIGHT = new HashSet<>();
@@ -30,8 +36,35 @@ public class PlayerEffects {
         SHIELD_ACTIVE.add(p.getUUID());
     }
 
+    /** Katana im Inventar: unzerstoerbar + Schaerfe 10 + Pluenderung 10. */
+    private static void upgradeKatanas(Player player) {
+        var lookup = player.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        Holder<Enchantment> sharpness = lookup.getOrThrow(Enchantments.SHARPNESS);
+        Holder<Enchantment> looting = lookup.getOrThrow(Enchantments.LOOTING);
+
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
+            if (!stack.is(ThorMod.KATANA)) continue;
+
+            if (stack.getDamageValue() > 0) {
+                stack.setDamageValue(0);
+            }
+
+            if (EnchantmentHelper.getItemEnchantmentLevel(sharpness, stack) < 10
+                    || EnchantmentHelper.getItemEnchantmentLevel(looting, stack) < 10) {
+                EnchantmentHelper.updateEnchantments(stack, enchants -> {
+                    enchants.set(sharpness, 10);
+                    enchants.set(looting, 10);
+                });
+            }
+        }
+    }
+
     public static void tick(Player player) {
         UUID id = player.getUUID();
+
+        upgradeKatanas(player);
 
         // ---- Fliegen mit Thors Hammer ----
         boolean holding = holdingHammer(player);
