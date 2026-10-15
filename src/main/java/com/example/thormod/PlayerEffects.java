@@ -76,36 +76,17 @@ public class PlayerEffects {
                 1, 0, 0, 0, 0);
     }
 
-    /** Susanoo-aehnliche rote Huelle aus Partikeln. */
-    private static void susanoo(ServerLevel sl, Player p) {
-        // Rippen: vier Boegen, vorne offen
-        double[] heights = {0.7, 1.05, 1.4, 1.75};
-        double[] radii = {0.85, 0.95, 0.9, 0.75};
-        for (int h = 0; h < heights.length; h++) {
-            for (int d = 50; d <= 310; d += 12) {
-                double a = Math.toRadians(d);
-                dot(sl, p, Math.sin(a) * radii[h], heights[h], Math.cos(a) * radii[h], RED);
-            }
-        }
-
-        // Wirbelsaeule hinten
-        for (double y = 0.2; y <= 2.3; y += 0.15) {
-            dot(sl, p, 0, y, -0.9, RED);
-        }
-
-        // Schulterkugeln ueber den Schultern
-        for (int s = -1; s <= 1; s += 2) {
-            for (int d = 0; d < 360; d += 45) {
-                double a = Math.toRadians(d);
-                dot(sl, p, s * 0.6 + 0.18 * Math.cos(a), 2.2 + 0.18 * Math.sin(a), 0, RED);
-            }
-        }
-
-        // Arme: Boegen, die sich vorne einrollen
-        for (int s = -1; s <= 1; s += 2) {
-            for (int i = 0; i <= 12; i++) {
-                double t = i / 12.0;
-                dot(sl, p, s * (0.95 - 0.35 * t), 1.3 - 1.1 * t, 0.1 + 0.9 * Math.sin(t * Math.PI), RED);
+    /** Erzeugt mehrere rote Ringer / Aura-Schichten übereinander (wie auf dem Bild). */
+    private static void ringAura(ServerLevel sl, Player p) {
+        double radius = 1.0; // Radius des Kreises um den Spieler
+        // Mehrere Ringe übereinander von Fußhöhe (0.1) bis Kopfhöhe (1.9)
+        for (double yOffset = 0.1; yOffset <= 1.9; yOffset += 0.45) {
+            int points = 16; // Anzahl der Partikelpunkte pro Ringkreis
+            for (int i = 0; i < points; i++) {
+                double angle = i * (2 * Math.PI / points);
+                double lx = Math.cos(angle) * radius;
+                double lz = Math.sin(angle) * radius;
+                dot(sl, p, lx, yOffset, lz, RED);
             }
         }
     }
@@ -140,9 +121,9 @@ public class PlayerEffects {
             player.setAirSupply(player.getMaxAirSupply());
 
             if (player.level() instanceof ServerLevel sl) {
-                // rote Huelle alle 2 Ticks
+                // Ring-Aura alle 2 Ticks aktualisieren
                 if (player.tickCount % 2 == 0) {
-                    susanoo(sl, player);
+                    ringAura(sl, player);
                 }
                 // lila Nebel am Koerper
                 for (int i = 0; i < 4; i++) {
